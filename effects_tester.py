@@ -1,7 +1,5 @@
 """
 This file contains main funciton that tests effects.py module
-****this is to test git pull/diff***
-****this is to test pull again***
 """
 import effects
 
