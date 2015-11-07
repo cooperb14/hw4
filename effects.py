@@ -4,15 +4,17 @@ UNI: cbb2153
 
 Effects file for assignment 4
 """
+import linecache
 
 def convert_pix_to_RGB_list(line):
-    pix_str = " ".join(line[3:]).replace('\n', '').split()[3:]
-    RGB_lst = [int(i) for i in pix_str]
-    return RGB_lst
+    ls = line.replace('\n', '').split()
+    ls = [i.strip(' ') for i in ls]
+    ls = [int(i) for i in ls]
+    return ls
 
 def convert_RGB_elements_to_str(ls):
     return ' ' .join([str(i) for i in ls]) 
-    
+# this will have to change to a 'mode' function when using > 3 files
 def median(ls_1, ls_2, ls_3, count):
     ls_comp = [ls_1[count], ls_2[count], ls_3[count]]
     return sorted(ls_comp)[len(ls_comp)//2]
@@ -21,7 +23,7 @@ def median(ls_1, ls_2, ls_3, count):
 def apply_effects(in_filename, out_filename, effects, *filter_filenames):
     '''primary function that is called by the effects_tester. '''
 
-# *filter_filenames stores the names of additional files for the object_filter    
+# *filter_filenames stores the names of additional files for the object_filted
     
     if effects.index(True) == 0:
         pass
@@ -38,33 +40,28 @@ def apply_effects(in_filename, out_filename, effects, *filter_filenames):
     else:
         pass    
     
-def object_filter(in_file_list, out_file):
+def object_filter(in_files, out_file):
     '''Filters out pixel values that appear in only a minority
     of the images in the parameter in_file_list'''
     
-    input_file_1 = open(in_file_list[0], "r")
-    input_file_2 = open(in_file_list[1], "r")
-    input_file_3 = open(in_file_list[2], "r")
+    input_file_1 = open(in_files[0], "r")
     output_file = open(out_file, "w")
     
-    lines_1 = input_file_1.readlines()
-    lines_2 = input_file_2.readlines()
-    lines_3 = input_file_3.readlines()
-    header = lines_1[:3]
-    
-    RGB_1 = convert_pix_to_RGB_list(lines_1)
-    RGB_2 = convert_pix_to_RGB_list(lines_2)
-    RGB_3 = convert_pix_to_RGB_list(lines_3)
-    
-    new_pixs = []
-    new_pixs = [median(RGB_1, RGB_2, RGB_3, i) for i in range(len(RGB_1))]
-    new_pixs = convert_RGB_elements_to_str(new_pixs) +"\n"
-    header.append(new_pixs)
-    output_file.writelines(header)
+    i = 1
+    for n in input_file_1:
+        if i <= 3:
+            output_file.write(linecache.getline(in_files[0], i))
+        else:
+            ls_1 = convert_pix_to_RGB_list(linecache.getline(in_files[0], i))
+            ls_2 = convert_pix_to_RGB_list(linecache.getline(in_files[1], i))
+            ls_3 = convert_pix_to_RGB_list(linecache.getline(in_files[2], i))
+            
+            new_pixs = []
+            new_pixs = [median(ls_1, ls_2, ls_3, x) for x in range(len(ls_1))]
+            output_file.write(convert_RGB_elements_to_str(new_pixs) + ' ')
+        i += 1         
     
     input_file_1.close()
-    input_file_2.close()
-    input_file_3.close()
     output_file.close()
     
 
@@ -74,17 +71,19 @@ def shades_of_gray(in_file, out_file):
     input_file = open(in_file, "r")
     output_file = open(out_file, "w")
     
-    lines = input_file.readlines()
-    header = lines[:3]
-    RGB_vals = convert_pix_to_RGB_list(lines)
     new_pixs = []
-    for i in range(len(RGB_vals)):
-        if (i+1)%3 == 0:
-            average = (RGB_vals[i] + RGB_vals[i - 1]+ RGB_vals[i - 2])/3
-            new_pixs += [average] * 3
-    new_pixs = convert_RGB_elements_to_str(new_pixs)
-    header.append(new_pixs)
-    output_file.writelines(header)
+    counter = 0
+    for n in input_file:
+        if counter < 3:
+            output_file.write(n)
+            counter += 1
+        else:
+            ls = convert_pix_to_RGB_list(n)
+            new_pixs = []
+            for i in range(0, len(ls), 3):
+                average = (ls[i] + ls[i + 1] + ls[i + 2])/3
+                new_pixs.extend([average] * 3)
+        output_file.write(convert_RGB_elements_to_str(new_pixs) + ' ')
     
     input_file.close()
     output_file.close()
@@ -95,44 +94,43 @@ def negate_red(in_file, out_file):
     input_file = open(in_file, "r")
     output_file = open(out_file, "w")
     
-    lines = input_file.readlines()
-    header = lines[:3]
-    max_val = int(lines[2].strip('\n'))
-    RGB_vals = convert_pix_to_RGB_list(lines)
-    new_pixs = []
-    for i in range(len(RGB_vals)):
-        if i%3 == 0:
-            diff = max_val/2 - RGB_vals[i]
-            new_pixs.append(round(max_val/2 + diff))
+    max_val = int(linecache.getline(in_file, 3).strip(' '))
+
+    counter = 0
+    for n in input_file:
+        if counter < 3:
+            output_file.write(n)
+            counter += 1
         else:
-            new_pixs.append(RGB_vals[i])
-    new_pixs = convert_RGB_elements_to_str(new_pixs)
-    header.append(new_pixs)
-    output_file.writelines(header)
+            ls = convert_pix_to_RGB_list(n)
+            for i in range(len(ls)):
+                if i%3 == 0:
+                    ls[i] = (max_val - ls[i])
+            output_file.write(convert_RGB_elements_to_str(ls) + ' ')
 
     input_file.close()
     output_file.close()
     
 def negate_green(in_file, out_file):
     '''Negates the green in an image'''
+    
     input_file = open(in_file, "r")
     output_file = open(out_file, "w")
     
-    lines = input_file.readlines()
-    header = lines[:3]
-    max_val = int(lines[2].strip('\n'))
-    RGB_vals = convert_pix_to_RGB_list(lines)
-    new_pixs = []
-    for i in range(len(RGB_vals)):
-        if (i-1)%3 == 0:
-            diff = max_val/2 - RGB_vals[i]
-            new_pixs.append(round(max_val/2 + diff))
-        else:
-            new_pixs.append(RGB_vals[i])
-    new_pixs = convert_RGB_elements_to_str(new_pixs)
-    header.append(new_pixs)
-    output_file.writelines(header)
+    max_val = int(linecache.getline(in_file, 3).strip(' '))
 
+    counter = 0
+    for n in input_file:
+        if counter < 3:
+            output_file.write(n)
+            counter += 1
+        else:
+            ls = convert_pix_to_RGB_list(n)
+            for i in range(len(ls)):
+                if (i-1)%3 == 0:
+                    ls[i] = (max_val - ls[i])
+            output_file.write(convert_RGB_elements_to_str(ls) + ' ')
+            
     input_file.close()
     output_file.close()
 
@@ -142,21 +140,20 @@ def negate_blue(in_file, out_file):
     input_file = open(in_file, "r")
     output_file = open(out_file, "w")
     
-    lines = input_file.readlines()
-    header = lines[:3]
-    max_val = int(lines[2].strip('\n'))
-    RGB_vals = convert_pix_to_RGB_list(lines)
-    new_pixs = []
-    for i in range(len(RGB_vals)):
-        if (i-2)%3 == 0:
-            diff = max_val/2 - RGB_vals[i]
-            new_pixs.append(round(max_val/2 + diff))
-        else:
-            new_pixs.append(RGB_vals[i])
-    new_pixs = convert_RGB_elements_to_str(new_pixs)
-    header.append(new_pixs)
-    output_file.writelines(header)
+    max_val = int(linecache.getline(in_file, 3).strip(' '))
 
+    counter = 0
+    for n in input_file:
+        if counter < 3:
+            output_file.write(n)
+            counter += 1
+        else:
+            ls = convert_pix_to_RGB_list(n)
+            for i in range(len(ls)):
+                if (i-2)%3 == 0:
+                    ls[i] = (max_val - ls[i])
+            output_file.write(convert_RGB_elements_to_str(ls) + ' ')
+            
     input_file.close()
     output_file.close()
     
@@ -166,22 +163,17 @@ def mirror(in_file, out_file):
     input_file = open(in_file, "r")
     output_file = open(out_file, "w")
     
-    lines = input_file.readlines()
-    header = lines[:3]
-    adjusted_lines = [i.replace('\n','') for i in lines[3:]]
-    result = []
-    
-    for i in adjusted_lines:
-        x = i.split()
-        x = [int(i) for i in x]
-        package_pixs = [[x[i], x[i+1], x[i+2]] for i in range(0, len(x), 3)]
-        package_pixs.reverse()
-        concat_pkg = [convert_RGB_elements_to_str(i) for i in package_pixs]
-        result.append(' '.join(concat_pkg))
-    
-    new_lines = ' '.join(result)
-    header.append(new_lines)
-    output_file.writelines(header)
+    counter = 0
+    for n in input_file:
+        if counter < 3:
+            output_file.write(n)
+            counter += 1
+        else:
+            ls  = convert_pix_to_RGB_list(n)
+            pkg = [[ls[i], ls[i+1], ls[i+2]] for i in range(0, len(ls), 3)]
+            pkg.reverse()
+            line = ' '.join([convert_RGB_elements_to_str(i) for i in pkg])
+            output_file.write(line + ' ')
 
     input_file.close()
     output_file.close()
