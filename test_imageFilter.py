@@ -31,7 +31,7 @@ for n in file_1:
         ls_3 = convert_pix_to_RGB_list(linecache.getline(entered[2], i))
         new_pixs = []
         new_pixs = [median(ls_1, ls_2, ls_3, x) for x in range(len(ls_1))]
-        temp.write(convert_RGB_elements_to_str(new_pixs) + ' ')
+        temp.write(convert_RGB_elements_to_str(new_pixs) + '\n')
     i += 1
 
 file_1.close()
